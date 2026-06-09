@@ -10,8 +10,7 @@
 ## Domain
 
 <!-- What domain did you choose? Why is this knowledge valuable and hard to find through official channels? -->
-This project focuses on Virginia Tech dining experiences and student opinions about campus food. While official dining websites provide menus and location information, they do not capture student perspectives on food quality, value, wait times, variety, and overall satisfaction. This knowledge is scattered across Reddit discussions, Google reviews, and informal recommendations, making it difficult for students to find in one place.
-
+This project is focused on the Dining Experience at Virginia Tech and how students feel about the food offered on campus. There are official dining websites where you can view menu options and where to find each dining option, but you cannot see what students think of the quality of the food, value of the food, the amount of time it takes to get food, the variety of food, and an overall satisfaction level. Therefore, it is difficult for students to discover about these topics since many of the opinions are spread out across several locations including Reddit, Google Reviews, and some informal recommendations.
 
 ---
 
@@ -42,11 +41,11 @@ This project focuses on Virginia Tech dining experiences and student opinions ab
      numbers fit the structure of your documents.
      A review-heavy corpus warrants different chunking than a long FAQ. -->
 
-**Chunk size:**
+**Chunk size:** 300 Characters
 
-**Overlap:**
+**Overlap:** 50 Characters
 
-**Reasoning:**
+**Reasoning:** Most of the sources are Reddit posts and Google reviews. These types of comments are typically brief and relate to only one primary issue, so a chunk size of 300 characters allows each individual opinion to stay together without combining unrelated topics. For example, a comment about wait times at D2 can remain separate from a comment about vegetarian options. A 50-character overlap helps maintain context if a sentence is split between two chunks. The Virginia Tech Dining website also provided some data, but due to the length of the paragraphs, smaller chunks would still provide the proper level of detail since each paragraph is addressing a different subject matter.
 
 ---
 
@@ -58,11 +57,11 @@ This project focuses on Virginia Tech dining experiences and student opinions ab
      would you weigh in choosing a different embedding model — context length, multilingual
      support, accuracy on domain-specific text, latency? -->
 
-**Embedding model:**
+**Embedding model:** all-MiniLM-L6-v2
 
-**Top-k:**
+**Top-k:** 5
 
-**Production tradeoff reflection:**
+**Production tradeoff reflection:** For a real-world deployment, I would consider using OpenAI's text-embedding-3-small model because it may improve retrieval quality for the informal language often found in Reddit comments and reviews, although it would increase both cost and response time. Since all of the documents are written in English, multilingual support is not necessary, and context length is not a concern because the chunks are only 300 characters long. For retrieval, using a very small top-k value such as 1 or 2 could miss relevant information that appears across multiple documents, while a large value such as 10 or more may introduce less relevant content. A top-k value of 5 provides a balance between retrieving enough information and maintaining relevance.
 
 ---
 
@@ -75,11 +74,11 @@ This project focuses on Virginia Tech dining experiences and student opinions ab
 
 | # | Question | Expected answer |
 |---|----------|-----------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | What do students say about wait times at D2 during lunch? | D2 gets crowded and noisy, especially when summer camps visit, but wait times are generally manageable |
+| 2 | Which dining plan do students recommend for first-year students living on campus? | Get the smallest/cheapest plan and add dining dollars as needed — do not pay for premium upfront |
+| 3 | What vegetarian options are available at Owens according to students? | Variabowl, Wan (tofu stir fry and vegan bulgogi), and occasional veggie burgers at Pops |
+| 4 | What are the main complaints students have about Turner Place dining hall? | Long lines at Qdoba and Jamba Juice, understaffing, inconsistent portion sizes at Fire Grill, and limited seating |
+| 5 | Is D2 considered good value according to student reviews? | Yes, all you can eat for around $5 with a student discount, but food quality is inconsistent |
 
 ---
 
@@ -89,9 +88,9 @@ This project focuses on Virginia Tech dining experiences and student opinions ab
      Consider: noisy or inconsistent documents, missing source attribution, off-topic
      retrieval, chunks that split key information across boundaries. -->
 
-1.
+1. The Turner Place thread is 14 years old and the D2 thread is 6 years old. Menu items, prices, and restaurant names have changed since then. The system may retrieve and present this outdated information as if it is current, which is misleading even though it is technically grounded in the documents.
 
-2.
+2. Some threads on Reddit only have 6 or 7 comments or responses, which indicates that there will be very little information available for the search terms provided by individual users. If a user were to ask a specific question regarding "Owens", there may be insufficient data within the specific Owen's thread to allow the system to provide an answer, resulting in pieces being pulled from completely unrelated documents.
 
 ---
 
@@ -103,6 +102,30 @@ This project focuses on Virginia Tech dining experiences and student opinions ab
      You can use ASCII art, a Mermaid diagram, or embed a sketch as an image.
      You'll use this diagram as context when prompting AI tools to implement each stage. -->
 
+Raw .txt files (docs/)
+        ↓
+[Document Ingestion - ingest.py]
+   Read all .txt files from docs/ folder
+        ↓
+[Chunking - 300 chars, 50 char overlap]
+   Split each document into small chunks
+   preserving individual opinions/reviews
+        ↓
+[Embedding - all-MiniLM-L6-v2 (sentence-transformers)]
+   Embed each chunk into a vector
+        ↓
+[Vector Store - ChromaDB]
+   Store all chunk vectors locally
+        ↓
+[Retrieval - top-5 semantic search]
+   Given a user query, find the 5 most
+   similar chunks by cosine similarity
+        ↓
+[Generation - Groq API / llama-3.3-70b-versatile]
+   Generate answer using only retrieved
+   chunks as context
+        ↓
+Answer + Source Attribution
 ---
 
 ## AI Tool Plan
@@ -119,6 +142,12 @@ This project focuses on Virginia Tech dining experiences and student opinions ab
 
 **Milestone 3 — Ingestion and chunking:**
 
+I will provide Claude with my Chunking Strategy section and the list of files from my docs/ directory and request that it create a load_and_chunk() method to load all .txt files, divide each file into 300 character chunks with a 50 character overlap, and return a list of dictionaries with the keys text, source and chunk_id.
+
 **Milestone 4 — Embedding and retrieval:**
 
+I will give Claude my Retrieval Approach section and ask it to implement an embed_and_store() function using sentence-transformers all-MiniLM-L6-v2 and ChromaDB, and a retrieve() function that takes a query string and returns the top 5 most similar chunks with their source filenames included.
+
 **Milestone 5 — Generation and interface:**
+
+Claude will be given my entire planning document (planning.md), and I will ask it to create a function called query_rag(). It will take in an end user question as input and then call the retrieve() function to obtain the top 5 chunks from the database. These chunks will be returned from the retrieve() function and used to format a prompt that contains either a citation or the source file name of each of the retrieved chunks and is sent via the Groq API llama-3.3-70b-versatile to generate a response from the llama. I will check to ensure that every response generated will have at least one source file name in the citation.
