@@ -14,6 +14,9 @@
      Example: "Student reviews of CS professors at [university] — useful because official
      course descriptions don't reflect teaching style, exam difficulty, or workload." -->
 
+This project covers Virginia Tech dining experiences and student opinions about campus food. While official dining websites provide menus and location information, they do not capture student perspectives on food quality, value, wait times, variety, and overall satisfaction. This knowledge is scattered across Reddit threads, Google reviews, and informal recommendations, making it difficult for students to find in one place. A first-year student trying to decide which dining hall to use or which dining plan to buy cannot get that information from the official VT Dining website.
+
+
 ---
 
 ## Document Sources
@@ -24,16 +27,16 @@
 
 | # | Source | Type | URL or file path |
 |---|--------|------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+| 1 | Google Maps | Reviews  | docs/google_reviews_d2.txt |
+| 2 | Google Maps| Reviews  | docs/google_reviews_hokie_grill.txt |
+| 3 | dining.vt.edu | Official page | docs/vt_dining_overview.txt |
+| 4 | r/VirginiaTech | Reddit thread | docs/reddit_best_dining_hall.txt |
+| 5 | r/VirginiaTech | Reddit thread | docs/reddit_turner_dining.txt |
+| 6 | r/VirginiaTech | Reddit thread | docs/reddit_vegetarian_dining.txt |
+| 7 | r/VirginiaTech | Reddit thread | docs/reddit_campus_food_recs.txt |
+| 8 | r/VirginiaTech | Reddit thread | docs/reddit_owens_food.txt |
+| 9 | r/VirginiaTech | Reddit thread | docs/reddit_d2_food.txt |
+| 10 | r/VirginiaTech | Reddit thread | docs/reddit_dining_plan_worth_it.txt |
 
 ---
 
@@ -46,13 +49,13 @@
      - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
      - What your final chunk count was across all documents -->
 
-**Chunk size:**
+**Chunk size:** 300 Characters
 
-**Overlap:**
+**Overlap:** 50 Characters
 
-**Why these choices fit your documents:**
+**Why these choices fit your documents:** Most documents were Reddit comments and Google reviews, which are usually short and focus on one opinion. A chunk size of 300 characters was chosen because it is large enough to capture a complete idea without combining different opinions. A 50 character overlap helps keep context when a sentence is split between chunks. Before chunking, the documents were cleaned by removing HTML tags, HTML entities, and extra blank lines.
 
-**Final chunk count:**
+**Final chunk count:** 117 chunks across 10 documents
 
 ---
 
@@ -64,9 +67,9 @@
      Consider: context length limits, multilingual support, accuracy on domain-specific text,
      latency, and local vs. API-hosted. -->
 
-**Model used:**
+**Model used:** all-MiniLM-L6-v2 via sentence-transformers (runs locally, no API key required)
 
-**Production tradeoff reflection:**
+**Production tradeoff reflection:** For a real deployment, I would consider using OpenAI's text-embedding-3-small because it may provide more accurate results on informal text such as Reddit comments. However, it would increase both cost and response time. Since all documents are in English, multilingual support is not needed. The 300 character chunks are also small enough that context length is not a concern. One limitation of all-MiniLM-L6-v2 is that it is a general purpose model, so it may miss relevant results when users phrase questions differently from the wording used in the reviews.
 
 ---
 
@@ -81,7 +84,11 @@
 
 **System prompt grounding instruction:**
 
+The system prompt instructs the LLM to answer only using the retrieved chunks provided as context and to not use any outside knowledge. The exact instruction given is: "You are a helpful assistant for Virginia Tech students. Answer the question using ONLY the information provided in the context below. If the answer is not in the context, say you don't have enough information. At the end of your answer, cite the source filenames in parentheses."
+
 **How source attribution is surfaced in the response:**
+
+Each retrieved chunk is sent to the LLM along with its source filename. The model is instructed to include the filename at the end of its answer so users can see where the information came from. The retrieval function also displays all source filenames used in generating the response, making it easy to identify the documents that contributed to the answer.
 
 ---
 
@@ -93,11 +100,11 @@
 
 | # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
 |---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| 1 | What do students say about wait times at D2 during lunch? | D2 gets crowded and noisy, especially when summer camps visit, but wait times are generally manageable | System said "No wait" at D2 during lunch, pulling from a single Google review metadata tag rather than full context | Off-target | Inaccurate |
+| 2 | Which dining plan do students recommend for first year students living on campus? | Get the smallest/cheapest plan and add dining dollars as needed | Students recommend the cheapest plan and adding dining dollars as needed, as many end up with money left over | Relevant | Accurate |
+| 3 | What vegetarian options are available at Owens according to students? | Variabowl, Wan (tofu stir fry and vegan bulgogi), and occasional veggie burgers at Pops | Wan tofu stir fry, vegan bulgogi, Variabowl, and occasional veggie burgers at Pops | Relevant | Accurate |
+| 4 | What are the main complaints students have about Turner Place dining hall? | Long lines at Qdoba and Jamba Juice, understaffing, inconsistent portion sizes at Fire Grill, and limited seating | Long lines, food under heat lamp, slow food preparation, impractical for quick meals between classes | Relevant | Partially accurate |
+| 5 | Is D2 considered good value according to student reviews? | Yes, all you can eat for around $5 with a student discount, but food quality is inconsistent | D2 is the best value dining hall on campus, all you can eat for $5 | Relevant | Partially Accurate |
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target  
 **Response accuracy:** Accurate / Partially accurate / Inaccurate
@@ -119,11 +126,22 @@
 
 **Question that failed:**
 
+What do students say about wait times at D2 during lunch?
+
 **What the system returned:**
+
+According to the reviews, there is "No wait" at D2 during lunch. 
+[Source: google_reviews_d2.txt]
+
+Sources: google_reviews_hokie_grill.txt, google_reviews_d2.txt, reddit_turner_dining.txt, vt_dining_overview.txt, reddit_dining_plan_worth_it.txt
 
 **Root cause (tied to a specific pipeline stage):**
 
+The error occurred at the chunking stage of the process where the D2 Google review had been broken down into separate pieces by the 300 character fixed-sized chunker. The "Wait Time: No Wait" tied to the D2 review was a metadata tag and had been entered as its own chunk and not tied back to the review it was associated with. When a search for wait times occurred the isolated metadata tag was matched to the query of wait times and passed to the LLM as if it was the complete opinion of a student. The chunk that contained the most semantically relevant information regarding wait times belonged to Hokie Grill and not to D2 since it contained an entire sentence for wait times of 10 - 20 minutes and was therefore matched against the fragmented chunks of D2's Google review.
+
 **What you would change to fix it:**
+
+Chunking is based on a measure of the individual reviews (or paragraph) to maintain the contextual relationship of metadata with each review. This prevents the isolated tags associated with a review (e.g. “Wait time: No wait”) from becoming stand-alone items that can lead to inaccurate retrieval or search results.
 
 ---
 
@@ -134,7 +152,11 @@
 
 **One way the spec helped you during implementation:**
 
+The chunking strategy section in planning.md guided the implementation of chunk_text() in ingest.py. Deciding on 300 character chunks and a 50 character overlap before writing any code gave the function a clear target. It also made it easier to prompt Claude to generate the ingestion code because providing the exact chunk size and overlap produced code that matched the plan without needing corrections.
+
 **One way your implementation diverged from the spec, and why:**
+
+The spec described the retrieval code as a single pipeline, but in the implementation it was split into two files, ingest.py and retriever.py. This happened because the embedding and retrieval logic needed to import code from ingest.py, and separating them made each part easier to test on its own. Although the diagram in the spec suggested one script, using two files turned out to be cleaner and more practical.
 
 ---
 
@@ -151,12 +173,12 @@
 
 **Instance 1**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* My Chunking Strategy section from planning.md and the list of files in my docs/ folder.
+- *What it produced:* A load_and_chunk() function that read all .txt files and split them into fixed-size character chunks with overlap, returning a list of dictionaries with text, source, and chunk_id keys.
+- *What I changed or overrode:* The original generated code combined loading and chunking into one function. I separated them into load_documents(), clean_text(), and chunk_text() as three distinct functions so each stage could be tested independently and reused in retriever.py.
 
 **Instance 2**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* My Retrieval Approach section from planning.md and the pipeline diagram.
+- *What it produced:* An embed_and_store() function using sentence-transformers and ChromaDB, and a retrieve() function that returned the top 5 chunks with distance scores and source metadata.
+- *What I changed or overrode:* The generated code initially used an in-memory ChromaDB client. I changed it to PersistentClient so embeddings are saved to disk and do not need to be recreated on every run. This was a deliberate improvement over what the AI produced.
