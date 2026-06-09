@@ -10,6 +10,8 @@
 ## Domain
 
 <!-- What domain did you choose? Why is this knowledge valuable and hard to find through official channels? -->
+This project focuses on Virginia Tech dining experiences and student opinions about campus food. While official dining websites provide menus and location information, they do not capture student perspectives on food quality, value, wait times, variety, and overall satisfaction. This knowledge is scattered across Reddit discussions, Google reviews, and informal recommendations, making it difficult for students to find in one place.
+
 
 ---
 
@@ -20,16 +22,16 @@
 
 | # | Source | Description | URL or location |
 |---|--------|-------------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+| 1 | Google Maps | Student reviews of D2 Dining Hall | docs/google_reviews_d2.txt |
+| 2 | Google Maps | Student reviews of Hokie Grill | docs/google_reviews_hokie_grill.txt |
+| 3 | dining.vt.edu | Official VT Dining Services overview | docs/vt_dining_overview.txt |
+| 4 | r/VirginiaTech | Thread: What are the best dining halls? | docs/reddit_best_dining_hall.txt |
+| 5 | r/VirginiaTech | Thread: What do you think of Turner Place? | docs/reddit_turner_dining.txt |
+| 6 | r/VirginiaTech | Thread: Best places to get vegetarian food on campus | docs/reddit_vegetarian_dining.txt |
+| 7 | r/VirginiaTech | Thread: Best food spots at VT | docs/reddit_campus_food_recs.txt |
+| 8 | r/VirginiaTech | Thread: Owen's Dining | docs/reddit_owens_food.txt |
+| 9 | r/VirginiaTech | Thread: Is there any one food at D2 that's universally bad? | docs/reddit_d2_food.txt|
+| 10 | r/VirginiaTech | Thread: What dining plan at Virginia Tech is worth it? | docs/reddit_dining_plan_worth_it.txt |
 
 ---
 
